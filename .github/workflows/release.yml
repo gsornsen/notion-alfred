@@ -16,8 +16,9 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Download Artifact
-        uses: actions/download-artifact@v3
+        uses: dawidd6/action-download-artifact@v2
         with:
+          workflow: build.yml
           name: alfredworkflow
       - name: Create a GitHub release
         uses: ncipollo/release-action@v1
