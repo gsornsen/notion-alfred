@@ -12,11 +12,9 @@ jobs:
         - name: Checkout
           uses: actions/checkout@v2
         - name: Build
-          uses: vimtor/action-zip@v1
-          with:
-            files: src/
-            recursive: false
-            dest: ${{ secrets.DIST_FILENAME }}
+          run: |
+            sudo apt-get -y install zip &&
+            zip -r -j ${{ secrets.DIST_FILENAME }} src/*
         - name: Upload Artifact
           uses: actions/upload-artifact@v3
           with:
