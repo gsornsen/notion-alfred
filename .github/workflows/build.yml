@@ -13,8 +13,7 @@ jobs:
           uses: actions/checkout@v2
         - name: Build
           run: |
-            sudo apt-get -y install zip
-          run: |
+            sudo apt-get -y install zip &&
             zip -r -j ${{ secrets.DIST_FILENAME }} src/*
         - name: Upload Artifact
           uses: actions/upload-artifact@v3
