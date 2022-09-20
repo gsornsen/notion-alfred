@@ -5,6 +5,7 @@ import json
 import sys
 from os import getenv
 from typing import Any, Dict, Optional, List
+from pprint import pprint
 
 
 notion_version: str = "2022-06-28"
@@ -17,6 +18,8 @@ database_endpoint: str = f"{base_endpoint}/databases"
 token: str = getenv("NOTION_API_TOKEN")
 task_db_id: str = getenv("TASK_DB_ID")
 note_db_id: str = getenv("NOTE_DB_ID")
+note_emoji: str = getenv("NOTE_EMOJI", "📓")
+task_emoji: str = getenv("TASK_EMOJI", "✅")
 
 
 # Types
@@ -71,10 +74,17 @@ class Client:
         pages = await self.parse_search_results(request)
         return pages
 
-    async def get_page_property_by_ids(self, page_id: str, property_id: str) -> str:
-        endpoint = f"{pages_endpoint}/{page_id}/properties/{property_id}"
+    async def get_page_property_by_ids(self, page_id: str, property_name: str) -> str:
+        endpoint = f"{pages_endpoint}/{page_id}"
         request = await self.request(endpoint)
-        prop: str = request["results"][0]["title"]["plain_text"]
+        props = request["properties"]
+        icon = request["icon"]
+        if "title" in property_name:
+            prop: str = props["title"]["title"][0]["plain_text"]
+        elif "icon" in property_name:
+            prop: str = icon["emoji"]
+        else:
+            prop: str = props[property_name]
         return prop
 
     async def parse_search_results(
@@ -86,14 +96,15 @@ class Client:
             return parsed_results
         for result in search_results["results"]:
             _ = {}
-            # _["emoji"] = result["icon"]["emoji"]
             # TODO: Alfred uses paths for icons only
             # https://www.alfredapp.com/help/workflows/inputs/script-filter/json/
             _["id"] = result["id"]
             _["url"] = result["url"]
             page_title = await self.get_page_property_by_ids(_["id"], "title")
+            page_icon = await self.get_page_property_by_ids(_["id"], "icon")
+            _["icon"] = page_icon
             parsed_results[page_title] = _
-        return parsed_results # TODO: Hook up to Alfred
+        return parsed_results
 
     async def translate_search_results_for_alfred(
         self,
@@ -109,13 +120,12 @@ class Client:
             page["title"] = page_title
             page["arg"] = page_props["url"]
             page["quicklookurl"] = page_props["url"]
-            # TODO: Get Icon Path from Page and add icon object
+            page["icon"] = page_props["icon"]
             page["autocomplete"] = page_title
             alfred_object["items"].append(page)
         return alfred_object
 
-    async def add_note_db_entry(self, db_id: str, title: str, icon: str = "🗂️") -> None:
-        # TODO: Handle Icon
+    async def add_note_db_entry(self, db_id: str, title: str, icon: str) -> None:
         # TODO: Dynamic entries
         payload = {
             "parent": {
@@ -143,8 +153,7 @@ class Client:
         await self.request(pages_endpoint, query=encoded_payload)
         return
 
-    async def add_task_db_entry(self, db_id: str, title: str, icon: str = "🗂️") -> None:
-        # TODO: Handle Icon
+    async def add_task_db_entry(self, db_id: str, title: str, icon: str) -> None:
         # TODO: Dynamic entries
         payload = {
             "parent": {
@@ -177,16 +186,17 @@ class Client:
         return
 
 
-async def main(action: str, data: str):
+async def main(action: str, data: str, debug: bool = False):
     client = Client()
     if action == "search":
         search_results = await client.search_for_pages(data)
         alfred_object = await client.translate_search_results_for_alfred(search_results)
-        print(json.dumps(alfred_object,indent=2)) # For Alfred
+
+        print(json.dumps(alfred_object, indent=2, ensure_ascii=False)) # For Alfred
     elif action == "task":
-        await client.add_task_db_entry(task_db_id, data)
+        await client.add_task_db_entry(task_db_id, data, task_emoji)
     elif action == "note":
-        await client.add_note_db_entry(note_db_id, data)
+        await client.add_note_db_entry(note_db_id, data, note_emoji)
     else:
         raise KeyError("Action not supported!")
 
