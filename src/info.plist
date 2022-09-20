@@ -344,12 +344,16 @@
 	<dict>
 		<key>NOTE_DB_ID</key>
 		<string></string>
+		<key>NOTE_EMOJI</key>
+		<string>📓</string>
 		<key>NOTION_API_TOKEN</key>
 		<string></string>
 		<key>NOTION_API_VERSION</key>
 		<string>2022-06-28</string>
 		<key>TASK_DB_ID</key>
 		<string></string>
+		<key>TASK_EMOJI</key>
+		<string>✅</string>
 	</dict>
 	<key>variablesdontexport</key>
 	<array>
